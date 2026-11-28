@@ -2,13 +2,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { Interface, JsonRpcProvider, isAddress, isHexString } from "ethers";
-import { isObjectIdOrHexString } from "mongoose";
+import { connection, isObjectIdOrHexString } from "mongoose";
 import { ESCROW_ADDRESS, ESCROW_ABI } from "@/lib/contracts";
 import { connectDB } from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import Bounty from "@/models/Bounty";
 
 const ESCROW_INTERFACE = new Interface(ESCROW_ABI);
+
+class ApprovalConflict extends Error {}
 
 export async function POST(req: NextRequest) {
     let provider: JsonRpcProvider | undefined;
@@ -57,13 +59,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Transaction did not approve this bounty and hunter" }, { status: 422 });
         }
 
-        await Submission.findOneAndUpdate(submissionQuery, { status: "approved" });
-        await Bounty.findByIdAndUpdate(bountyId, {
-            status: "completed",
+        await connection.transaction(async session => {
+            const updatedBounty = await Bounty.updateOne(
+                { _id: bountyId, onChainId: bounty.onChainId, status: { $in: ["open", "completed"] } },
+                { $set: { status: "completed" } },
+                { session }
+            );
+            if (updatedBounty.matchedCount === 0) throw new ApprovalConflict("The bounty is closed");
+
+            const existingApproval = await Submission.exists({
+                _id: { $ne: submissionId },
+                bountyId,
+                status: "approved",
+            }).session(session);
+            if (existingApproval) throw new ApprovalConflict("A different submission is already approved");
+
+            const selected = await Submission.updateOne(
+                { ...submissionQuery, hunterWallet: submission.hunterWallet },
+                { $set: { status: "approved" } },
+                { session }
+            );
+            if (selected.matchedCount === 0) throw new ApprovalConflict("The submission changed before approval");
+
+            await Submission.updateMany(
+                { _id: { $ne: submissionId }, bountyId, status: "pending" },
+                { $set: { status: "rejected" } },
+                { session }
+            );
         });
 
         return NextResponse.json({ success: true });
     } catch (error) {
+        if (error instanceof ApprovalConflict) {
+            return NextResponse.json({ error: error.message }, { status: 409 });
+        }
         console.error("Approval verification or database sync failed", error instanceof Error ? error.name : typeof error);
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     } finally {
