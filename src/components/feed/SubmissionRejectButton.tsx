@@ -85,7 +85,7 @@ export default function SubmissionRejectButton({ submissionId, onChainId, hunter
                 type="button"
                 onClick={reject}
                 disabled={loading}
-                className="rounded-md px-3 py-1 text-[10px] font-bold text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
+                className="min-h-10 rounded-md px-3 text-xs font-bold text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
             >
                 {loading ? "Rejecting…" : "Reject"}
             </button>

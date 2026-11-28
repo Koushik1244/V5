@@ -38,17 +38,17 @@ export default function BountyCard({ bounty, onAccept, onRefunded }: Props) {
       "
         >
             {/* Header */}
-            <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3 p-4">
+                <div className="flex min-w-0 items-center gap-3">
                     {/* Avatar (mock) */}
                     <img
                         src={`https://i.pravatar.cc/40?u=${bounty.username}`}
-                        className="w-10 h-10 rounded-full object-cover border border-primary/20"
+                        className="h-10 w-10 shrink-0 rounded-full border border-primary/20 object-cover"
                     />
 
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <p className="font-semibold text-textMainLight dark:text-textMainDark text-sm">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <p className="max-w-full break-words text-sm font-semibold text-textMainLight dark:text-textMainDark">
                                 {bounty.username}
                             </p>
 
@@ -70,7 +70,7 @@ export default function BountyCard({ bounty, onAccept, onRefunded }: Props) {
                     </div>
                 </div>
 
-                <span className="text-xs text-textMutedDark">
+                <span className="shrink-0 text-xs text-textMutedDark">
                     {/* {new Date(bounty.createdAt).toLocaleString()} */}
                     {formatTimeAgo(bounty.createdAt)}
                 </span>
@@ -78,7 +78,7 @@ export default function BountyCard({ bounty, onAccept, onRefunded }: Props) {
 
             {/* Description */}
             <div className="px-4 pb-3">
-                <p className="text-sm leading-relaxed text-textMainLight dark:text-textMainDark">
+                <p className="break-words text-sm leading-relaxed text-textMainLight dark:text-textMainDark">
                     {bounty.description}
                 </p>
             </div>
@@ -93,7 +93,7 @@ export default function BountyCard({ bounty, onAccept, onRefunded }: Props) {
             </div>
 
             {/* Actions */}
-            <div className="px-4 py-3 border-t border-primary/10 flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-primary/10 px-4 py-3">
                 <div className="flex items-center gap-6 text-textMutedDark">
                     <button className="flex items-center gap-1 hover:text-red-400 active:scale-90 transition">
                         <span className="text-[20px]">

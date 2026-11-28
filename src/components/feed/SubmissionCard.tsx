@@ -157,7 +157,7 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
         <>
             <div
                 className="
-mt-3 ml-10 left-32 relative
+relative mt-3 ml-3 sm:ml-10
 before:absolute before:left-[-14px] before:top-4
 before:w-2 before:h-2 before:rounded-full
 before:bg-primary/40
@@ -171,15 +171,15 @@ rounded-2xl
 shadow-md
 "           >
                 {/* Header */}
-                <div className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 p-3">
+                    <div className="flex min-w-0 items-center gap-2">
                         <img
                             src={`https://i.pravatar.cc/40?u=${submission.username}`}
-                            className="w-8 h-8 rounded-full border border-primary/20"
+                            className="h-8 w-8 shrink-0 rounded-full border border-primary/20"
                         />
 
-                        <div>
-                            <p className="text-xs font-semibold">
+                        <div className="min-w-0">
+                            <p className="break-words text-xs font-semibold">
                                 {submission.username}
                             </p>
 
@@ -205,7 +205,7 @@ shadow-md
                 {/* Description */}
                 {submission.description && (
                     <div className="px-3 pb-2">
-                        <p className="text-xs">{submission.description}</p>
+                        <p className="break-words text-sm">{submission.description}</p>
                     </div>
                 )}
 
@@ -213,14 +213,14 @@ shadow-md
                 <div className="px-3 pb-3">
                     <MediaViewer
                         mediaUrl={submission.mediaUrl}
-                        lat={bounty.location.lat}
-                        lng={bounty.location.lng}
+                        lat={bounty.location?.lat}
+                        lng={bounty.location?.lng}
                     />
                 </div>
 
                 {/* Actions */}
-                <div className="px-3 py-2 border-t border-primary/10 flex items-center justify-between">
-                    <div className="flex items-center gap-5 text-textMutedDark">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-primary/10 px-3 py-2">
+                    <div className="flex items-center gap-3 text-textMutedDark sm:gap-5">
                         <button className="flex items-center gap-1 hover:text-red-400 active:scale-90 transition">
                             <span className="text-[20px]">
                                 <AiFillLike size={24} />
@@ -261,7 +261,7 @@ shadow-md
                             <button
                                 type="button"
                                 onClick={() => setConfirmOpen(true)}
-                                className="rounded-md bg-primary px-3 py-1 text-[10px] font-bold text-white transition hover:bg-primary/80"
+                                className="min-h-10 rounded-md bg-primary px-3 text-xs font-bold text-white transition hover:bg-primary/80"
                             >
                                 Approve
                             </button>

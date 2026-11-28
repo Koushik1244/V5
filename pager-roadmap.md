@@ -70,7 +70,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 - [x] Show field-level validation for description, reward, and location in both creation forms. Verified the live modal in Chrome and checked zero coordinates and USDC precision.
 - [x] Clarify the hunter submission steps, require a photo before sending, and show success on the bounty. Verified upload and submission retries in Chrome.
 - [x] Show wallet confirmation, on-chain confirmation, database sync, and success in the approval dialog. Verified that a failed save can retry without a second payment and that closed-bounty recovery requires a matching receipt.
-- [ ] **Partial.** Finish the mobile responsiveness pass. Some pages have responsive layouts, and the main route links are hidden below the `md` breakpoint.
+- [x] Fit bounty threads, proof, and creator actions on narrow screens. Verified a long proof thread and the approval dialog at 320 px, in addition to the creation and proof flows at 390 px.
 
 ### 2.4 Navigation & structure
 - [x] Link Feed (Home), Map, Search, and Profile in the desktop menu. Create opens from the Home floating button.
