@@ -68,7 +68,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 - [x] Show feed and partial proof-loading errors with a retry action. Verified both failure paths and recovery in Chrome.
 - [x] Add map loading and error states with a retry for bounty data. Verified delayed loading, failure, recovery, and the empty state in Chrome.
 - [x] Show field-level validation for description, reward, and location in both creation forms. Verified the live modal in Chrome and checked zero coordinates and USDC precision.
-- [ ] **Partial.** Clarify the hunter submission steps. The existing modal collects a description and photo, shows a submitting state, and refreshes the feed on success.
+- [x] Clarify the hunter submission steps, require a photo before sending, and show success on the bounty. Verified upload and submission retries in Chrome.
 - [ ] **Partial.** Refine approval feedback. The confirm modal shows “Processing...” and has a sync retry, while success and transaction errors still use alerts.
 - [ ] **Partial.** Finish the mobile responsiveness pass. Some pages have responsive layouts, and the main route links are hidden below the `md` breakpoint.
 

@@ -21,6 +21,7 @@ export default function BountyFeed() {
 
     // Hunter modal
     const [submitBountyId, setSubmitBountyId] = useState<string | null>(null);
+    const [submittedBountyId, setSubmittedBountyId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchBounties();
@@ -124,6 +125,9 @@ export default function BountyFeed() {
                             setSubmitBountyId(id);
                         }}
                     />
+                    {submittedBountyId === bounty._id && (
+                        <p role="status" className="pl-4 text-sm">Proof submitted. The bounty creator can now review it.</p>
+                    )}
 
                     {/* Submissions */}
                     {submissionsMap[bounty._id]?.length === 0 && (
@@ -145,7 +149,10 @@ export default function BountyFeed() {
                 open={!!submitBountyId}
                 bountyId={submitBountyId}
                 onClose={() => setSubmitBountyId(null)}
-                onSubmitted={fetchBounties}
+                onSubmitted={() => {
+                    setSubmittedBountyId(submitBountyId);
+                    void fetchBounties();
+                }}
             />
         </div>
     );
