@@ -1,4 +1,4 @@
-import { Contract, type Eip1193Provider } from "ethers";
+import { Contract, parseUnits, type Eip1193Provider } from "ethers";
 import { ESCROW_ADDRESS, USDC_ADDRESS, ESCROW_ABI, ERC20_ABI } from "./contracts";
 import { connectMonadWallet } from "./monadWallet";
 
@@ -12,6 +12,32 @@ export const BOUNTY_DURATIONS = [
     { label: "3 days", seconds: 3 * 24 * HOUR },
     { label: "6 days", seconds: 6 * 24 * HOUR },
 ];
+
+export type BountyFieldErrors = { description?: string; reward?: string; location?: string };
+
+export function validateBountyFields(description: string, reward: string, lat: number | null, lng: number | null) {
+    const errors: BountyFieldErrors = {};
+    if (!description.trim()) errors.description = "Enter what you want checked.";
+    if (lat === null || lng === null || !Number.isFinite(lat) || !Number.isFinite(lng)
+        || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        errors.location = "Choose a valid location.";
+    }
+
+    const amount = Number(reward);
+    let units: bigint | null = null;
+    if (!Number.isFinite(amount) || amount <= 0) {
+        errors.reward = "Enter a reward greater than zero.";
+    } else {
+        try {
+            const parsedReward = parseUnits(reward.trim(), 6);
+            if (parsedReward === parseUnits(amount.toString(), 6)) units = parsedReward;
+            else errors.reward = "Enter a smaller USDC amount.";
+        } catch {
+            errors.reward = "Enter a USDC amount with up to 6 decimal places.";
+        }
+    }
+    return { errors, amount, units };
+}
 
 export async function lockBountyFunds(
     ethereum: Eip1193Provider,

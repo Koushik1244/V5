@@ -5,8 +5,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useUser } from "@/context/UserContext";
-import { parseUnits } from "ethers";
-import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
+import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds, validateBountyFields, type BountyFieldErrors } from "@/lib/bountyCreation";
 import { MonadWalletNetworkError } from "@/lib/monadWallet";
 
 export default function CreateBounty() {
@@ -18,43 +17,33 @@ export default function CreateBounty() {
     const [lng, setLng] = useState("");
     const [address, setAddress] = useState("");
     const [loading, setLoading] = useState(false);
-    const [networkError, setNetworkError] = useState("");
+    const [formError, setFormError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<BountyFieldErrors>({});
 
     const createBounty = async () => {
-        setNetworkError("");
-        if (!user) {
-            alert("Connect wallet first");
+        setFormError("");
+        const { amount, errors, units } = validateBountyFields(description, reward, lat.trim() ? Number(lat) : null, lng.trim() ? Number(lng) : null);
+        setFieldErrors(errors);
+        if (Object.keys(errors).length > 0 || units === null) return;
+        if (!user || !walletProvider) {
+            setFormError("Connect your wallet before posting.");
             return;
         }
 
-        if (!description.trim()) {
-            alert("Enter a bounty description");
-            return;
-        }
-
-        const amount = Number(reward);
-        if (!amount || amount <= 0) {
-            alert("Enter a valid reward amount");
-            return;
-        }
-
+        let locked = false;
         try {
             setLoading(true);
 
-            if (!walletProvider) {
-                alert("Reconnect your wallet to continue.");
-                return;
-            }
-
-            const onChainId = await lockBountyFunds(walletProvider, parseUnits(amount.toString(), 6), duration, user.walletAddress);
+            const onChainId = await lockBountyFunds(walletProvider, units, duration, user.walletAddress);
+            locked = true;
             if (onChainId === null) {
-                alert("Funds were locked, but the bounty ID could not be read. The bounty was not saved.");
+                setFormError("Funds were locked, but the bounty ID could not be read.");
                 return;
             }
 
             await axios.post("/api/bounty/create", {
                 walletAddress: user.walletAddress,
-                description,
+                description: description.trim(),
                 reward: amount,
                 lat: Number(lat),
                 lng: Number(lng),
@@ -74,11 +63,11 @@ export default function CreateBounty() {
 
         } catch (err) {
             if (err instanceof MonadWalletNetworkError) {
-                setNetworkError(err.message);
+                setFormError(err.message);
                 return;
             }
             console.error(err);
-            alert("Transaction failed");
+            setFormError(locked ? "Funds were locked, but the bounty could not be saved." : "Could not post the bounty. Check your wallet and try again.");
         } finally {
             setLoading(false);
         }
@@ -91,18 +80,25 @@ export default function CreateBounty() {
 
             <textarea
                 placeholder="Ask what's happening at a location..."
+                aria-label="Bounty description"
+                aria-invalid={Boolean(fieldErrors.description)}
+                aria-describedby={fieldErrors.description ? "create-bounty-description-error" : undefined}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full border rounded-lg p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-black"
                 rows={3}
             />
+            {fieldErrors.description && <p id="create-bounty-description-error" role="alert" className="mb-3 text-sm text-red-700">{fieldErrors.description}</p>}
 
             <div className="grid grid-cols-2 gap-3 mb-3">
                 <input
                     type="number"
-                    min="0.1"
-                    step="0.1"
+                    min="0.000001"
+                    step="0.000001"
                     placeholder="Reward (USDC)"
+                    aria-label="Reward in USDC"
+                    aria-invalid={Boolean(fieldErrors.reward)}
+                    aria-describedby={fieldErrors.reward ? "create-bounty-reward-error" : undefined}
                     value={reward}
                     onChange={(e) => setReward(e.target.value)}
                     className="border rounded-lg p-2"
@@ -115,6 +111,7 @@ export default function CreateBounty() {
                     className="border rounded-lg p-2"
                 />
             </div>
+            {fieldErrors.reward && <p id="create-bounty-reward-error" role="alert" className="mb-3 text-sm text-red-700">{fieldErrors.reward}</p>}
 
             <label className="block mb-3 text-sm font-medium">
                 <span>Expires after</span>
@@ -133,6 +130,9 @@ export default function CreateBounty() {
             <div className="grid grid-cols-2 gap-3 mb-4">
                 <input
                     placeholder="Latitude"
+                    aria-label="Latitude"
+                    aria-invalid={Boolean(fieldErrors.location)}
+                    aria-describedby={fieldErrors.location ? "create-bounty-location-error" : undefined}
                     value={lat}
                     onChange={(e) => setLat(e.target.value)}
                     className="border rounded-lg p-2"
@@ -140,13 +140,17 @@ export default function CreateBounty() {
 
                 <input
                     placeholder="Longitude"
+                    aria-label="Longitude"
+                    aria-invalid={Boolean(fieldErrors.location)}
+                    aria-describedby={fieldErrors.location ? "create-bounty-location-error" : undefined}
                     value={lng}
                     onChange={(e) => setLng(e.target.value)}
                     className="border rounded-lg p-2"
                 />
             </div>
+            {fieldErrors.location && <p id="create-bounty-location-error" role="alert" className="mb-3 text-sm text-red-700">{fieldErrors.location}</p>}
 
-            {networkError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{networkError}</p>}
+            {formError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{formError}</p>}
             <button
                 onClick={createBounty}
                 disabled={loading}

@@ -7,8 +7,7 @@ import MapPicker from "./ui/MapPicker";
 import ImageUploader from "./ui/ImageUploader";
 import axios from "axios";
 import { useUser } from "@/context/UserContext";
-import { parseUnits } from "ethers";
-import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
+import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds, validateBountyFields, type BountyFieldErrors } from "@/lib/bountyCreation";
 import { MonadWalletNetworkError } from "@/lib/monadWallet";
 import { IoImageSharp } from "react-icons/io5";
 
@@ -27,7 +26,8 @@ export default function BountyModal({ open, onClose }: Props) {
     const [reward, setReward] = useState("");
     const [duration, setDuration] = useState(DEFAULT_BOUNTY_DURATION);
     const [loading, setLoading] = useState(false);
-    const [networkError, setNetworkError] = useState("");
+    const [formError, setFormError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<BountyFieldErrors>({});
 
 
     // Handle mount + scroll lock
@@ -50,47 +50,30 @@ export default function BountyModal({ open, onClose }: Props) {
     };
 
     const createBounty = async () => {
-        setNetworkError("");
-        if (!user) {
-            alert("Connect wallet first");
+        setFormError("");
+        const { amount, errors, units } = validateBountyFields(description, reward, lat, lng);
+        setFieldErrors(errors);
+        if (Object.keys(errors).length > 0 || units === null) return;
+        if (!user || !walletProvider) {
+            setFormError("Connect your wallet before posting.");
             return;
         }
 
-        if (!description.trim()) {
-            alert("Enter a bounty description");
-            return;
-        }
-
-        if (!lat || !lng) {
-            alert("Please select a location");
-            return;
-        }
-
-        const amount = Number(reward);
-
-        if (!amount || amount <= 0) {
-            alert("Enter valid reward");
-            return;
-        }
-
+        let locked = false;
         try {
             setLoading(true);
 
-            if (!walletProvider) {
-                alert("Reconnect your wallet to continue.");
-                return;
-            }
-
-            const onChainId = await lockBountyFunds(walletProvider, parseUnits(amount.toString(), 6), duration, user.walletAddress);
+            const onChainId = await lockBountyFunds(walletProvider, units, duration, user.walletAddress);
+            locked = true;
             if (onChainId === null) {
-                alert("Funds were locked, but the bounty ID could not be read. The bounty was not saved.");
+                setFormError("Funds were locked, but the bounty ID could not be read.");
                 return;
             }
 
             // Save in Mongo
             await axios.post("/api/bounty/create", {
                 walletAddress: user.walletAddress,
-                description,
+                description: description.trim(),
                 reward: amount,
                 lat,
                 lng,
@@ -113,11 +96,11 @@ export default function BountyModal({ open, onClose }: Props) {
 
         } catch (err) {
             if (err instanceof MonadWalletNetworkError) {
-                setNetworkError(err.message);
+                setFormError(err.message);
                 return;
             }
             console.error(err);
-            alert("Transaction failed");
+            setFormError(locked ? "Funds were locked, but the bounty could not be saved." : "Could not post the bounty. Check your wallet and try again.");
         } finally {
             setLoading(false);
         }
@@ -187,6 +170,9 @@ export default function BountyModal({ open, onClose }: Props) {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="What’s happening at this location?"
+                        aria-label="Bounty description"
+                        aria-invalid={Boolean(fieldErrors.description)}
+                        aria-describedby={fieldErrors.description ? "bounty-modal-description-error" : undefined}
                         rows={3}
                         className="
               w-full p-3 rounded-lg
@@ -197,11 +183,17 @@ export default function BountyModal({ open, onClose }: Props) {
               transition
             "
                     />
+                    {fieldErrors.description && <p id="bounty-modal-description-error" role="alert" className="text-sm text-red-700 dark:text-red-300">{fieldErrors.description}</p>}
 
                     {/* Reward */}
                     <input
                         type="number"
                         placeholder="Reward (USDC)"
+                        min="0.000001"
+                        step="0.000001"
+                        aria-label="Reward in USDC"
+                        aria-invalid={Boolean(fieldErrors.reward)}
+                        aria-describedby={fieldErrors.reward ? "bounty-modal-reward-error" : undefined}
                         value={reward}
                         onChange={(e) => setReward(e.target.value)}
                         className="
@@ -212,6 +204,7 @@ export default function BountyModal({ open, onClose }: Props) {
               focus:ring-2 focus:ring-primary/40
             "
                     />
+                    {fieldErrors.reward && <p id="bounty-modal-reward-error" role="alert" className="text-sm text-red-700 dark:text-red-300">{fieldErrors.reward}</p>}
 
                     <label className="block space-y-1 text-sm font-medium">
                         <span>Expires after</span>
@@ -229,15 +222,16 @@ export default function BountyModal({ open, onClose }: Props) {
 
                     {/* Map Location Picker */}
                     {/* <div className="text-sm text-primary/70 space-y-2"> */}
-                    <div className="mb-4">
+                    <div className="mb-4" role="group" aria-label="Location" aria-describedby={fieldErrors.location ? "bounty-modal-location-error" : undefined}>
                         <p className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
                             <img src="/pager-icon.png" width={20} />
                             Select Location
                         </p>
 
                         <MapPicker onLocationSelect={handleLocation} />
+                        {fieldErrors.location && <p id="bounty-modal-location-error" role="alert" className="mt-2 text-sm text-red-700 dark:text-red-300">{fieldErrors.location}</p>}
 
-                        {lat && lng && (
+                        {lat !== null && lng !== null && (
                             <p className="text-xs text-primary/70 mt-2">
                                 Selected: {lat.toFixed(4)}, {lng.toFixed(4)}
                             </p>
@@ -257,7 +251,7 @@ export default function BountyModal({ open, onClose }: Props) {
                     {/* </div> */}
 
                     {/* Submit */}
-                    {networkError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{networkError}</p>}
+                    {formError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{formError}</p>}
                     <button
                         onClick={createBounty}
                         disabled={loading}
