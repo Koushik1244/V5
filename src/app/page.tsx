@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { HiOutlineCamera, HiOutlineMapPin, HiOutlineCheckCircle } from "react-icons/hi2";
 import BountyFeed from "@/components/BountyFeed";
 import BountyModal from "@/components/BountyModal";
@@ -12,6 +13,18 @@ const bountySteps = [
   { icon: HiOutlineCamera, title: "Get local proof", detail: "Someone nearby visits and submits a photo." },
   { icon: HiOutlineCheckCircle, title: "Approve and pay", detail: "Choose the proof that answers your request." },
 ];
+
+function OpenBountyFromNavigation({ setOpen }: { setOpen: (open: boolean) => void }) {
+  const search = useSearchParams();
+  useEffect(() => {
+    if (search.get("create") !== "1") return;
+    setOpen(true);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("create");
+    window.history.replaceState(null, "", url);
+  }, [search, setOpen]);
+  return null;
+}
 
 export default function Home() {
   const [open, setOpen] = useState(false);
@@ -81,6 +94,9 @@ export default function Home() {
           </ol>
         </section>
         <FloatingActionButton onClick={() => setOpen(true)} />
+        <Suspense fallback={null}>
+          <OpenBountyFromNavigation setOpen={setOpen} />
+        </Suspense>
         <BountyModal open={open} onClose={() => setOpen(false)} />
 
         <div id="bounty-feed" className="scroll-mt-24">

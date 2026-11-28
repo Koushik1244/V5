@@ -74,7 +74,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 
 ### 2.4 Navigation & structure
 - [x] Link Feed (Home), Map, Search, and Profile in the desktop menu. Create opens from the Home floating button.
-- [ ] Add mobile access to the main route links and confirm the intended menu access for Create.
+- [x] Add mobile links for Feed, Search, Map, and Profile, plus a Create action in both menus. Verified in Chrome that Create opens the bounty form from Map and Home.
 - [x] Mount wallet connection state globally through the root layout and shared user context. Menu visibility follows the header's scroll and map behavior.
 - [x] Wire the light/dark toggle globally through the document root and persist the theme across routes and reloads.
 

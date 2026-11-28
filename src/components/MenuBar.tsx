@@ -84,11 +84,11 @@ export default function MenuBar() {
             className={`
         sticky top-0 z-[1000]  // ✅ CHANGED: sticky NOT fixed
         transition-transform duration-300 ease-out
-        ${visible ? "translate-y-0" : "-translate-y-full"}
+        ${visible ? "translate-y-0" : "translate-y-0 md:-translate-y-full"}
         bg-white/90 dark:bg-[#1a1530]/95
         backdrop-blur-md
         border-b border-borderLight/50 dark:border-borderDark/50
-        px-6 py-4 lg:px-20
+        px-3 py-2 md:px-6 md:py-4 lg:px-20
       `}
         >
             <div className="max-w-[1200px] max-h-[50px] mx-auto flex items-center justify-between">
@@ -98,7 +98,7 @@ export default function MenuBar() {
                     onClick={() => router.push("/")}
                     className="flex items-center hover:scale-105 transition-transform duration-200"
                 >
-                    <div className="relative size-32">
+                    <div className="relative h-12 w-20 md:size-32">
                         <Image
                             src="/pager-logo.svg"
                             alt="Pager logo"
@@ -111,7 +111,7 @@ export default function MenuBar() {
                 </button>
 
                 {/* Nav */}
-                <nav className="hidden md:flex items-center gap-8">
+                <nav aria-label="Main navigation" className="hidden items-center gap-4 md:flex lg:gap-8">
                     {navItems.map((item) => {
                         const isActive =
                             item.href === "/"
@@ -138,6 +138,9 @@ export default function MenuBar() {
                             </Link>
                         );
                     })}
+                    <Link href="/?create=1" className="rounded-md bg-[#5938c9] px-3 py-2 text-sm font-semibold text-white">
+                        Create
+                    </Link>
                 </nav>
 
                 {/* Right */}
@@ -150,6 +153,21 @@ export default function MenuBar() {
                     />
                 </div>
             </div>
+            <nav aria-label="Mobile navigation" className="mt-2 grid grid-cols-5 gap-1 md:hidden">
+                {navItems.map(item => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={pathname === item.href ? "page" : undefined}
+                        className="rounded-md px-1 py-2 text-center text-sm font-medium aria-[current=page]:bg-primary/15"
+                    >
+                        {item.href === "/" ? "Feed" : item.label}
+                    </Link>
+                ))}
+                <Link href="/?create=1" className="rounded-md bg-[#5938c9] px-1 py-2 text-center text-sm font-semibold text-white">
+                    Create
+                </Link>
+            </nav>
         </header>
     );
 }
