@@ -31,7 +31,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 
 ### 1.3 Data model additions
 - [x] Store the escrow deadline as a date when creating a bounty and enforce the `open | completed | expired | refunded` enum. Verified persistence and compatibility with legacy records that have no deadline.
-- [ ] **Partial.** Enforce `pending | approved | rejected` in the submission schema. All three values are documented in a comment, and the field currently accepts any string.
+- [x] Enforce `pending | approved | rejected` in the submission schema. Verified valid states, the pending default, and rejection of invalid values.
 
 ### 1.4 Core flow testing checklist
 - [ ] Create a bounty end to end on Monad testnet and confirm USDC locks.

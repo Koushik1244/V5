@@ -31,7 +31,8 @@ const SubmissionSchema = new Schema(
 
         status: {
             type: String,
-            default: "pending", // pending | approved | rejected
+            enum: ["pending", "approved", "rejected"],
+            default: "pending",
         },
 
         rejectionTxHash: {
