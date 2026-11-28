@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { HiOutlineCamera, HiOutlineMapPin, HiOutlineCheckCircle } from "react-icons/hi2";
 import BountyFeed from "@/components/BountyFeed";
 import BountyModal from "@/components/BountyModal";
 import FloatingActionButton from "@/components/FloatingActionButton";
+
+const bountySteps = [
+  { icon: HiOutlineMapPin, title: "Post a bounty", detail: "Pin a place and say what you want checked." },
+  { icon: HiOutlineCamera, title: "Get local proof", detail: "Someone nearby visits and submits a photo." },
+  { icon: HiOutlineCheckCircle, title: "Approve and pay", detail: "Choose the proof that answers your request." },
+];
 
 export default function Home() {
   const [open, setOpen] = useState(false);
@@ -57,6 +64,20 @@ export default function Home() {
           >
             Post a bounty
           </button>
+        </section>
+        <section aria-labelledby="how-pager-works" className="mt-4 rounded-2xl border border-primary/15 bg-cardLight/95 px-6 py-7 dark:bg-cardDark/95 sm:px-8">
+          <h2 id="how-pager-works" className="text-xl font-semibold">How Pager works</h2>
+          <ol className="mt-4 grid list-none gap-4 sm:grid-cols-3">
+            {bountySteps.map(({ icon: Icon, title, detail }) => (
+              <li key={title} className="flex gap-3 sm:flex-col">
+                <Icon aria-hidden="true" className="size-6 shrink-0 text-[#5938c9] dark:text-[#b8a7ff]" />
+                <div>
+                  <h3 className="font-semibold">{title}</h3>
+                  <p className="mt-1 text-base leading-snug">{detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
         <FloatingActionButton onClick={() => setOpen(true)} />
         <BountyModal open={open} onClose={() => setOpen(false)} />
