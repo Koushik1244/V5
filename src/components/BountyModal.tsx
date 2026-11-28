@@ -9,6 +9,7 @@ import axios from "axios";
 import { useUser } from "@/context/UserContext";
 import { parseUnits } from "ethers";
 import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
+import { MonadWalletNetworkError } from "@/lib/monadWallet";
 import { IoImageSharp } from "react-icons/io5";
 
 type Props = {
@@ -26,6 +27,7 @@ export default function BountyModal({ open, onClose }: Props) {
     const [reward, setReward] = useState("");
     const [duration, setDuration] = useState(DEFAULT_BOUNTY_DURATION);
     const [loading, setLoading] = useState(false);
+    const [networkError, setNetworkError] = useState("");
 
 
     // Handle mount + scroll lock
@@ -48,6 +50,7 @@ export default function BountyModal({ open, onClose }: Props) {
     };
 
     const createBounty = async () => {
+        setNetworkError("");
         if (!user) {
             alert("Connect wallet first");
             return;
@@ -109,6 +112,10 @@ export default function BountyModal({ open, onClose }: Props) {
             window.location.reload(); // refresh feed
 
         } catch (err) {
+            if (err instanceof MonadWalletNetworkError) {
+                setNetworkError(err.message);
+                return;
+            }
             console.error(err);
             alert("Transaction failed");
         } finally {
@@ -250,6 +257,7 @@ export default function BountyModal({ open, onClose }: Props) {
                     {/* </div> */}
 
                     {/* Submit */}
+                    {networkError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{networkError}</p>}
                     <button
                         onClick={createBounty}
                         disabled={loading}

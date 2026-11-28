@@ -61,7 +61,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 - [x] Prompt for a username on first wallet connection when the user has none.
 - [ ] Verify first-time wallet onboarding in a browser with a wallet extension.
 - [x] Show empty states for no open bounties in the current map area, no proof on a bounty, and no activity on a profile. Verified all three in Chrome.
-- [ ] Replace raw `alert()` network-switch messaging with a proper toast or modal.
+- [x] Show network-switch failures inline in the creation and approval forms. Verified that refusing a wallet switch displays an accessible notice without a browser alert.
 
 ### 2.3 Core UX flows to smooth out
 - [x] Show a loading state in the feed.

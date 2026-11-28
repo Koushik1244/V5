@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 import axios from "axios";
 import { ethers } from "ethers";
 import { ESCROW_ADDRESS, ESCROW_ABI } from "@/lib/contracts";
-import { connectMonadWallet } from "@/lib/monadWallet";
+import { connectMonadWallet, MonadWalletNetworkError } from "@/lib/monadWallet";
 import { formatTimeAgo } from "@/lib/utils";
 import { FaShare } from "react-icons/fa";
 import { HiChatBubbleLeft } from "react-icons/hi2";
@@ -26,6 +26,7 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
 
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [networkError, setNetworkError] = useState("");
 
     const isCreator = user?.username === bounty.username;
     const isPending = submission.status === "pending";
@@ -34,6 +35,7 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
     const approve = async () => {
         try {
             setLoading(true);
+            setNetworkError("");
 
             if (!user || !walletProvider) {
                 alert("Reconnect your wallet to continue.");
@@ -70,6 +72,10 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
             alert("Funds released successfully!");
 
         } catch (err) {
+            if (err instanceof MonadWalletNetworkError) {
+                setNetworkError(err.message);
+                return;
+            }
             console.error(err);
             alert("Approval failed");
         } finally {
@@ -206,6 +212,8 @@ shadow-md
                             {bounty.reward} USDC will be released.
                             Platform fee: 2%
                         </p>
+
+                        {networkError && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{networkError}</p>}
 
                         <div className="flex gap-3">
                             <button

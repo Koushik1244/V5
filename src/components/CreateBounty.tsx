@@ -7,6 +7,7 @@ import axios from "axios";
 import { useUser } from "@/context/UserContext";
 import { parseUnits } from "ethers";
 import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
+import { MonadWalletNetworkError } from "@/lib/monadWallet";
 
 export default function CreateBounty() {
     const { user, walletProvider } = useUser();
@@ -17,8 +18,10 @@ export default function CreateBounty() {
     const [lng, setLng] = useState("");
     const [address, setAddress] = useState("");
     const [loading, setLoading] = useState(false);
+    const [networkError, setNetworkError] = useState("");
 
     const createBounty = async () => {
+        setNetworkError("");
         if (!user) {
             alert("Connect wallet first");
             return;
@@ -70,6 +73,10 @@ export default function CreateBounty() {
             setAddress("");
 
         } catch (err) {
+            if (err instanceof MonadWalletNetworkError) {
+                setNetworkError(err.message);
+                return;
+            }
             console.error(err);
             alert("Transaction failed");
         } finally {
@@ -139,6 +146,7 @@ export default function CreateBounty() {
                 />
             </div>
 
+            {networkError && <p role="alert" className="mb-2 text-sm text-red-700 dark:text-red-300">{networkError}</p>}
             <button
                 onClick={createBounty}
                 disabled={loading}
