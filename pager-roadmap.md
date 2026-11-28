@@ -55,7 +55,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 - [x] Add a hero that explains Pager and offers a “Post a bounty” action. Verified in Chrome at a 390 px viewport that it opens the creation form.
 - [x] Show three steps with icons for posting a bounty, getting local proof, and approving payment. Verified in narrow and wide Chrome layouts.
 - [x] Preview up to three open bounties from the live feed and link each preview to its thread. Verified filtering and navigation in Chrome.
-- [ ] Footer: links, testnet disclaimer (funds are testnet USDC, not real money)
+- [x] Add footer links to Feed, Map, Search, and Profile with a testnet USDC disclosure. Verified the links at a 390 px viewport in Chrome.
 
 ### 2.2 Onboarding flow
 - [x] Prompt for a username on first wallet connection when the user has none.

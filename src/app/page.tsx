@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { HiOutlineCamera, HiOutlineMapPin, HiOutlineCheckCircle } from "react-icons/hi2";
 import BountyFeed from "@/components/BountyFeed";
 import BountyModal from "@/components/BountyModal";
@@ -36,7 +37,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main
+    <div
       className="relative min-h-screen"
       style={{
         backgroundImage: `url(${bgImage})`,
@@ -49,7 +50,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-white/60 dark:bg-backgroundDark/80" />
 
       {/* Content */}
-      <div className="relative mx-auto max-w-2xl px-4 py-6">
+      <main className="relative mx-auto max-w-2xl px-4 py-6">
         <section className="rounded-2xl border border-primary/15 bg-cardLight/95 px-6 py-10 dark:bg-cardDark/95 sm:px-10 sm:py-14">
           <h1 className="max-w-sm text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
             Get answers from people nearby
@@ -82,8 +83,23 @@ export default function Home() {
         <FloatingActionButton onClick={() => setOpen(true)} />
         <BountyModal open={open} onClose={() => setOpen(false)} />
 
-        <BountyFeed />
-      </div>
-    </main>
+        <div id="bounty-feed" className="scroll-mt-24">
+          <BountyFeed />
+        </div>
+      </main>
+      <footer className="relative border-t border-primary/15 bg-cardLight/95 dark:bg-cardDark/95">
+        <div className="mx-auto max-w-2xl px-6 pb-24 pt-6 sm:pb-8">
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+            <a href="#bounty-feed" className="hover:underline">Feed</a>
+            <Link href="/map" className="hover:underline">Map</Link>
+            <Link href="/search" className="hover:underline">Search</Link>
+            <Link href="/profile" className="hover:underline">Profile</Link>
+          </nav>
+          <p className="mt-3 text-sm leading-relaxed">
+            Pager runs on Monad Testnet. Bounties use testnet USDC with no monetary value.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }
