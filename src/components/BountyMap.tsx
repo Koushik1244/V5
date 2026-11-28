@@ -88,7 +88,7 @@ export default function BountyMap() {
                         font-size:11px;
                         color:${bounty.status === "completed" ? "#22c55e" : "#998dce"};
                     ">
-                        ${bounty.status === "completed" ? "Completed" : "Active"}
+                        ${bounty.status === "refunded" ? "Refunded" : bounty.status === "completed" ? "Completed" : "Active"}
                     </span>
                 </div>
             `);

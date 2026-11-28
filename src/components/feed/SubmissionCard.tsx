@@ -168,7 +168,7 @@ shadow-md
                     </div>
 
                     {/* Creator Approve */}
-                    {isCreator && isPending && bounty.status !== "completed" && (
+                    {isCreator && isPending && bounty.status === "open" && (
                         <button
                             onClick={() => setConfirmOpen(true)}
                             className="

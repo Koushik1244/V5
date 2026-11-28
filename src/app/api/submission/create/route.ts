@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
+import Bounty from "@/models/Bounty";
 
 export async function POST(req: NextRequest) {
     try {
@@ -23,6 +24,12 @@ export async function POST(req: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const bounty = await Bounty.findById(bountyId).select("status");
+        if (!bounty) return NextResponse.json({ error: "Bounty not found" }, { status: 404 });
+        if (bounty.status !== "open") {
+            return NextResponse.json({ error: "Bounty is closed" }, { status: 409 });
         }
 
         const submission = await Submission.create({

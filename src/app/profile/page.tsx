@@ -197,7 +197,7 @@ export default function ProfilePage() {
 
                                 <div className="px-4 py-3 border-t border-primary/10 flex justify-between text-xs text-textMutedDark">
                                     <span>
-                                        {bounty.status === "completed"
+                                        {bounty.status === "refunded" ? "Refunded" : bounty.status === "completed"
                                             ? "Completed"
                                             : "Active"}
                                     </span>

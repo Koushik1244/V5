@@ -4,6 +4,7 @@
 
 import { formatTimeAgo } from "@/lib/utils";
 import MediaViewer from "./MediaViewer";
+import BountyRefundButton from "./BountyRefundButton";
 import { useUser } from "@/context/UserContext";
 import { AiFillLike } from "react-icons/ai";
 import { HiChatBubbleLeft, HiChatBubbleOvalLeft } from "react-icons/hi2";
@@ -13,13 +14,16 @@ import { FaShare } from "react-icons/fa";
 type Props = {
     bounty: any;
     onAccept?: (bountyId: string) => void;
+    onRefunded?: () => void;
 };
 
-export default function BountyCard({ bounty, onAccept }: Props) {
+export default function BountyCard({ bounty, onAccept, onRefunded }: Props) {
     const { user } = useUser();
 
     const isCreator = user?.username === bounty.username;
     const isCompleted = bounty.status === "completed";
+    const canRefund = user?._id === bounty.creator && bounty.onChainId > 0
+        && (bounty.status === "open" || bounty.status === "expired");
 
     return (
         <article
@@ -51,6 +55,11 @@ export default function BountyCard({ bounty, onAccept }: Props) {
                             {isCompleted && (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-500 font-semibold">
                                     Completed
+                                </span>
+                            )}
+                            {bounty.status === "refunded" && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                    Refunded
                                 </span>
                             )}
                         </div>
@@ -116,7 +125,7 @@ export default function BountyCard({ bounty, onAccept }: Props) {
                 </div>
 
                 {/* Right Action */}
-                {!isCreator && !isCompleted && (
+                {!isCreator && bounty.status === "open" && (
                     <button
                         onClick={() => onAccept?.(bounty._id)}
                         className="
@@ -130,7 +139,10 @@ export default function BountyCard({ bounty, onAccept }: Props) {
                     </button>
 
                 )}
-                {isCompleted && (
+                {canRefund && (
+                    <BountyRefundButton bountyId={bounty._id} onChainId={bounty.onChainId} onRefunded={onRefunded} />
+                )}
+                {(isCompleted || bounty.status === "refunded") && (
                     <span className="text-xs font-semibold text-green-500">
                         Closed
                     </span>

@@ -22,7 +22,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [x] Pass a deadline to `createBounty(amount, deadline)` from both creation components. The default is 24 hours, and the app reads the bounty ID from the confirmed `BountyCreated` event. Verified with mocked wallets and API calls, plus all four presets against a local escrow deployment.
 - [x] Confirm on-chain approval before calling `/api/submission/approve` from `SubmissionCard.tsx`. The client waits for the transaction or recovers a matching approval hash before retrying sync.
 - [x] Validate the approval transaction on the server. The API requires a successful Monad testnet receipt with a `BountyApproved` event from the configured escrow for the linked bounty and hunter. Verified with the client request and mocked RPC and database responses.
-- [ ] Add a refund action and `/api/bounty/refund` to sync the database after `refundExpired()`.
+- [x] Add a creator refund action and `/api/bounty/refund`. The API verifies the refund receipt before saving the status. A local escrow test confirmed that expiry returns the tokens and a failed database sync can retry without another transaction.
 - [x] Add a network guard to `SubmissionCard.tsx` approval. It verifies the chain ID after switching.
 - [ ] Reject the other pending submissions for the same bounty in `/api/submission/approve`. The route only updates the selected submission and bounty.
 - [ ] Add a “Not selected” state in `SubmissionCard.tsx`.

@@ -84,6 +84,7 @@ export default function BountyFeed() {
                     {/* Bounty */}
                     <BountyCard
                         bounty={bounty}
+                        onRefunded={fetchBounties}
                         onAccept={(id: string) => {
                             if (!user) {
                                 alert("Connect wallet first");
