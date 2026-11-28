@@ -52,7 +52,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 Goal: someone who has never seen the app can land on it, understand what it is, connect a wallet, and use it without confusion.
 
 ### 2.1 Landing page
-- [ ] Add a hero that explains Pager and provides a clear call to action. The home route currently opens directly to the live feed and a create button.
+- [x] Add a hero that explains Pager and offers a “Post a bounty” action. Verified in Chrome at a 390 px viewport that it opens the creation form.
 - [ ] How it works — 3 step visual (post bounty → local verifies → get paid)
 - [ ] Live/sample bounty preview cards pulled from the real feed
 - [ ] Footer: links, testnet disclaimer (funds are testnet USDC, not real money)
