@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import MediaViewer from "./MediaViewer";
 import SubmissionRejectButton from "./SubmissionRejectButton";
 import { useUser } from "@/context/UserContext";
@@ -10,7 +10,6 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { ESCROW_ADDRESS, ESCROW_ABI } from "@/lib/contracts";
 import { connectMonadWallet, MonadWalletNetworkError } from "@/lib/monadWallet";
-import { formatTimeAgo } from "@/lib/utils";
 import { FaShare } from "react-icons/fa";
 import { HiChatBubbleLeft } from "react-icons/hi2";
 import { AiFillLike } from "react-icons/ai";
@@ -21,67 +20,138 @@ type Props = {
     onApproved?: () => void;
 };
 
+async function recoverApprovalHash(
+    escrow: ethers.Contract,
+    storageKey: string,
+    onChainId: ethers.BigNumberish,
+    hunter: string,
+) {
+    const provider = escrow.runner?.provider;
+    if (!provider) return;
+
+    const topics = escrow.interface.encodeFilterTopics("BountyApproved", [onChainId, hunter]);
+    const matchesApproval = (log: ethers.Log) =>
+        log.address.toLowerCase() === ESCROW_ADDRESS.toLowerCase() &&
+        topics.every((topic, index) => topic === log.topics[index]);
+
+    let storedHash: string | null = null;
+    try {
+        storedHash = localStorage.getItem(storageKey);
+    } catch {
+        // Event logs can recover the hash when storage is unavailable.
+    }
+
+    if (storedHash) {
+        try {
+            const receipt = await provider.getTransactionReceipt(storedHash);
+            if (receipt?.status === 1 && receipt.logs.some(matchesApproval)) return storedHash;
+        } catch {
+            // Fall back to the event query if the receipt cannot be read.
+        }
+    }
+
+    try {
+        const latestBlock = await provider.getBlockNumber();
+        const filter = escrow.filters.BountyApproved(onChainId);
+        for (const range of [90_000, 10_000, 1_000]) {
+            try {
+                const logs = await escrow.queryFilter(filter, Math.max(0, latestBlock - range));
+                return logs.filter(matchesApproval).sort(
+                    (a, b) => b.blockNumber - a.blockNumber || b.index - a.index
+                )[0]?.transactionHash;
+            } catch {
+                // Some RPCs only accept shorter log queries.
+            }
+        }
+    } catch {
+        // The caller reports when no matching approval can be recovered.
+    }
+}
+
 export default function SubmissionCard({ submission, bounty, onApproved }: Props) {
-    const { user, walletProvider } = useUser();
+    const { user, walletProvider: ethereum } = useUser();
 
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [networkError, setNetworkError] = useState("");
+    const [stage, setStage] = useState<"idle" | "wallet" | "confirming" | "saving" | "retry" | "saved">("idle");
+    const [error, setError] = useState("");
+    const confirmedHash = useRef<string | null>(null);
 
     const isCreator = user?.username === bounty.username;
     const isPending = submission.status === "pending";
+    const busy = stage === "wallet" || stage === "confirming" || stage === "saving";
+    const storageKey = `pager:approval:${submission._id}`;
 
-    // 🔐 On-chain approval + DB update
-    const approve = async () => {
+    async function saveApproval(txHash: string) {
+        confirmedHash.current = txHash;
+        setStage("saving");
         try {
-            setLoading(true);
-            setNetworkError("");
-
-            if (!user || !walletProvider) {
-                alert("Reconnect your wallet to continue.");
-                return;
-            }
-
-            const provider = await connectMonadWallet(walletProvider);
-            const signer = await provider.getSigner(user.walletAddress);
-
-            const escrow = new ethers.Contract(
-                ESCROW_ADDRESS,
-                ESCROW_ABI,
-                signer
-            );
-
-            // 1️⃣ Release funds on-chain
-            const tx = await escrow.approveBounty(
-                bounty.onChainId,
-                submission.hunterWallet
-            );
-
-            await tx.wait();
-
-            // 2️⃣ Update DB
             await axios.post("/api/submission/approve", {
                 submissionId: submission._id,
                 bountyId: bounty._id,
-                txHash: tx.hash,
+                txHash,
             });
+        } catch {
+            setStage("retry");
+            return;
+        }
+        try {
+            localStorage.removeItem(storageKey);
+        } catch {
+            // The database already has the confirmed approval.
+        }
+        setStage("saved");
+    }
 
-            setConfirmOpen(false);
-            onApproved?.();
+    async function approve() {
+        setError("");
+        if (confirmedHash.current) {
+            await saveApproval(confirmedHash.current);
+            return;
+        }
+        if (!user || !ethereum) {
+            setError("Reconnect your wallet to continue.");
+            return;
+        }
 
-            alert("Funds released successfully!");
-
-        } catch (err) {
-            if (err instanceof MonadWalletNetworkError) {
-                setNetworkError(err.message);
+        setStage("wallet");
+        try {
+            const provider = await connectMonadWallet(ethereum);
+            const signer = await provider.getSigner(user.walletAddress);
+            const escrow = new ethers.Contract(ESCROW_ADDRESS, ESCROW_ABI, signer);
+            const onChainBounty = await escrow.bounties(bounty.onChainId);
+            if (!onChainBounty.active) {
+                const hash = await recoverApprovalHash(escrow, storageKey, bounty.onChainId, submission.hunterWallet);
+                if (!hash) {
+                    setStage("idle");
+                    setError("This bounty is closed on-chain. No matching payment to this hunter could be verified.");
+                    return;
+                }
+                await saveApproval(hash);
                 return;
             }
-            console.error(err);
-            alert("Approval failed");
-        } finally {
-            setLoading(false);
+
+            const tx = await escrow.approveBounty(bounty.onChainId, submission.hunterWallet);
+            setStage("confirming");
+            try {
+                localStorage.setItem(storageKey, tx.hash);
+            } catch {
+                // The on-chain event can recover the hash after confirmation.
+            }
+
+            const receipt = await tx.wait();
+            if (receipt?.status !== 1) throw new Error("Approval did not confirm");
+            await saveApproval(receipt.hash);
+        } catch (err) {
+            setStage("idle");
+            setError(err instanceof MonadWalletNetworkError ? err.message : "Could not confirm payment. Check your wallet and try again.");
         }
-    };
+    }
+
+    function closeConfirmation() {
+        setConfirmOpen(false);
+        setError("");
+        if (stage === "saved") onApproved?.();
+    }
 
     return (
         <>
@@ -200,35 +270,43 @@ shadow-md
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
             {confirmOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="glass-modal p-6 w-[320px] space-y-4 text-center">
-                        <h3 className="font-semibold text-textMainLight dark:text-textMainDark">
-                            Release funds to hunter?
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+                    <div role="dialog" aria-modal="true" aria-labelledby="approval-title" className="glass-modal w-full max-w-sm space-y-4 p-6 text-center">
+                        <h3 id="approval-title" className="text-lg font-semibold">
+                            {stage === "saved" ? "Payment approved" : "Release funds to hunter?"}
                         </h3>
 
-                        <p className="text-xs text-textMutedDark">
-                            {bounty.reward} USDC will be released.
-                            Platform fee: 2%
-                        </p>
+                        {stage === "saved" ? (
+                            <p role="status" className="text-sm">Funds were released and the approval was saved.</p>
+                        ) : (
+                            <p className="text-sm">{bounty.reward} USDC, including a 2% platform fee.</p>
+                        )}
 
-                        {networkError && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{networkError}</p>}
+                        {stage === "wallet" && <p role="status" className="text-sm">Check your wallet to confirm.</p>}
+                        {stage === "confirming" && <p role="status" className="text-sm">Waiting for Monad to confirm payment…</p>}
+                        {stage === "saving" && <p role="status" className="text-sm">Payment confirmed. Saving the approval…</p>}
+                        {stage === "retry" && <p role="alert" className="text-sm text-red-700 dark:text-red-300">Payment confirmed, but saving failed. Retry saving to update the bounty.</p>}
+                        {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
 
                         <div className="flex gap-3">
+                            {stage !== "saved" && (
+                                <button
+                                    type="button"
+                                    onClick={closeConfirmation}
+                                    disabled={busy}
+                                    className="flex-1 rounded-lg border border-borderLight py-2 disabled:opacity-50 dark:border-borderDark"
+                                >
+                                    {stage === "retry" ? "Close" : "Cancel"}
+                                </button>
+                            )}
                             <button
-                                onClick={() => setConfirmOpen(false)}
-                                className="flex-1 py-2 rounded-lg border border-borderLight dark:border-borderDark"
+                                type="button"
+                                onClick={stage === "saved" ? closeConfirmation : approve}
+                                disabled={busy}
+                                className="flex-1 rounded-lg bg-[#5938c9] py-2 font-semibold text-white disabled:opacity-50"
                             >
-                                Cancel
-                            </button>
-
-                            <button
-                                onClick={approve}
-                                disabled={loading}
-                                className="flex-1 py-2 rounded-lg bg-primary text-white shadow-glow"
-                            >
-                                {loading ? "Processing..." : "Confirm"}
+                                {stage === "saved" ? "Done" : stage === "retry" ? "Retry saving" : busy ? "Processing…" : "Confirm"}
                             </button>
                         </div>
                     </div>
