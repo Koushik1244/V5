@@ -7,7 +7,7 @@ import MapPicker from "./ui/MapPicker";
 import ImageUploader from "./ui/ImageUploader";
 import axios from "axios";
 import { useUser } from "@/context/UserContext";
-import { parseUnits, type Eip1193Provider } from "ethers";
+import { parseUnits } from "ethers";
 import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
 import { IoImageSharp } from "react-icons/io5";
 
@@ -21,7 +21,7 @@ export default function BountyModal({ open, onClose }: Props) {
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [imageUrl, setImageUrl] = useState("");
-    const { user } = useUser();
+    const { user, walletProvider } = useUser();
     const [description, setDescription] = useState("");
     const [reward, setReward] = useState("");
     const [duration, setDuration] = useState(DEFAULT_BOUNTY_DURATION);
@@ -73,13 +73,12 @@ export default function BountyModal({ open, onClose }: Props) {
         try {
             setLoading(true);
 
-            const ethereum = (window as Window & { ethereum?: Eip1193Provider }).ethereum;
-            if (!ethereum) {
-                alert("MetaMask not found");
+            if (!walletProvider) {
+                alert("Reconnect your wallet to continue.");
                 return;
             }
 
-            const onChainId = await lockBountyFunds(ethereum, parseUnits(amount.toString(), 6), duration);
+            const onChainId = await lockBountyFunds(walletProvider, parseUnits(amount.toString(), 6), duration, user.walletAddress);
             if (onChainId === null) {
                 alert("Funds were locked, but the bounty ID could not be read. The bounty was not saved.");
                 return;

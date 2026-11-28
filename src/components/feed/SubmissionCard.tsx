@@ -20,7 +20,7 @@ type Props = {
 };
 
 export default function SubmissionCard({ submission, bounty, onApproved }: Props) {
-    const { user } = useUser();
+    const { user, walletProvider } = useUser();
 
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -33,13 +33,13 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
         try {
             setLoading(true);
 
-            if (!(window as any).ethereum) {
-                alert("MetaMask not found");
+            if (!user || !walletProvider) {
+                alert("Reconnect your wallet to continue.");
                 return;
             }
 
-            const provider = new ethers.BrowserProvider((window as any).ethereum);
-            const signer = await provider.getSigner();
+            const provider = new ethers.BrowserProvider(walletProvider);
+            const signer = await provider.getSigner(user.walletAddress);
 
             const escrow = new ethers.Contract(
                 ESCROW_ADDRESS,

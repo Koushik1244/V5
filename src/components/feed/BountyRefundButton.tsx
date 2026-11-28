@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import axios from "axios";
-import { BrowserProvider, Contract, type Eip1193Provider } from "ethers";
+import { BrowserProvider, Contract } from "ethers";
 import { ESCROW_ABI, ESCROW_ADDRESS } from "@/lib/contracts";
+import { useUser } from "@/context/UserContext";
 
 type Props = {
     bountyId: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function BountyRefundButton({ bountyId, onChainId, onRefunded }: Props) {
+    const { user, walletProvider } = useUser();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const confirmedHash = useRef<string | null>(null);
@@ -30,21 +32,20 @@ export default function BountyRefundButton({ bountyId, onChainId, onRefunded }: 
             }
 
             if (!hash) {
-                const ethereum = (window as Window & { ethereum?: Eip1193Provider }).ethereum;
-                if (!ethereum) {
+                if (!user || !walletProvider) {
                     setMessage("Connect your wallet to request a refund.");
                     return;
                 }
-                if (await ethereum.request({ method: "eth_chainId" }) !== "0x279f") {
-                    await ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x279f" }] });
+                if (await walletProvider.request({ method: "eth_chainId" }) !== "0x279f") {
+                    await walletProvider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x279f" }] });
                 }
-                const provider = new BrowserProvider(ethereum);
+                const provider = new BrowserProvider(walletProvider);
                 if ((await provider.getNetwork()).chainId !== 10143n) {
                     setMessage("Switch your wallet to Monad Testnet.");
                     return;
                 }
 
-                const signer = await provider.getSigner();
+                const signer = await provider.getSigner(user.walletAddress);
                 const escrow = new Contract(ESCROW_ADDRESS, ESCROW_ABI, signer);
                 const [bounty, block] = await Promise.all([escrow.bounties(onChainId), provider.getBlock("latest")]);
                 if (bounty.creator.toLowerCase() !== (await signer.getAddress()).toLowerCase()) {

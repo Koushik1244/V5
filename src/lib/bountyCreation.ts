@@ -17,6 +17,7 @@ export async function lockBountyFunds(
     ethereum: Eip1193Provider,
     amount: bigint,
     duration: number,
+    walletAddress: string,
 ) {
     const switchChain = () => ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -51,7 +52,7 @@ export async function lockBountyFunds(
     if ((await provider.getNetwork()).chainId !== BigInt(MONAD_TESTNET_CHAIN_ID)) {
         throw new Error("Please switch to Monad Testnet");
     }
-    const signer = await provider.getSigner();
+    const signer = await provider.getSigner(walletAddress);
 
     const usdc = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
     const allowance = await usdc.approve(ESCROW_ADDRESS, amount);

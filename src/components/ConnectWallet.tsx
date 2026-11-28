@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ethers } from "ethers";
 import axios from "axios";
-import { useUser } from "@/context/UserContext";
+import { useUser, type InjectedWallet } from "@/context/UserContext";
 
 import CreateUsernameModal from "@/components/modals/CreateUsernameModal";
 import NotificationModal from "@/components/modals/NotificationModal";
@@ -21,10 +20,11 @@ export default function ConnectWallet({
     showLogoutButton = true,
     showAvatarDropdown = false,
 }: ConnectWalletProps) {
-    const { user, setUser } = useUser();
+    const { user, setUser, wallets, setWalletProvider } = useUser();
 
     const [username, setUsername] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showWallets, setShowWallets] = useState(false);
     const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
     const [isDark, setIsDark] = useState(false);
 
@@ -50,33 +50,25 @@ export default function ConnectWallet({
     // ---------------------------
     // Wallet Connection
     // ---------------------------
-    const connectWallet = async () => {
+    const connectWallet = async (wallet: InjectedWallet) => {
         try {
             setLoading(true);
 
-            if (!(window as any).ethereum) {
-                alert("Install MetaMask");
-                return;
-            }
-
-            const provider = new ethers.BrowserProvider(
-                (window as any).ethereum
-            );
-
-            const accounts = await provider.send("eth_requestAccounts", []);
+            const accounts = await wallet.provider.request({ method: "eth_requestAccounts" }) as string[];
             const address = accounts[0];
+            if (!address) return;
 
             const res = await axios.post("/api/user/connect", {
                 walletAddress: address,
             });
 
             const userData = res.data.user;
-            setUser(userData);
+            setWalletProvider(wallet.provider);
+            setUser({ ...userData, walletKey: wallet.info.rdns });
+            setShowWallets(false);
 
-            // Open username modal if not set
-            if (!userData.username) {
-                setShowUsernameModal(true);
-            }
+            setUsername("");
+            setShowUsernameModal(!userData.username);
         } catch (err) {
             console.error(err);
             alert("Wallet connection failed");
@@ -84,6 +76,16 @@ export default function ConnectWallet({
             setLoading(false);
         }
     };
+
+    function openWalletConnection() {
+        if (wallets.length === 0) {
+            alert("Install a browser wallet to connect.");
+        } else if (wallets.length === 1) {
+            void connectWallet(wallets[0]);
+        } else {
+            setShowWallets(previous => !previous);
+        }
+    }
 
     // ---------------------------
     // Username Save
@@ -97,7 +99,7 @@ export default function ConnectWallet({
                 username,
             });
 
-            setUser(res.data.user);
+            setUser({ ...res.data.user, walletKey: user.walletKey });
             setShowUsernameModal(false);
             setUsername("");
         } catch (err) {
@@ -110,7 +112,6 @@ export default function ConnectWallet({
     // Logout
     // ---------------------------
     const logout = () => {
-        localStorage.removeItem("pagerUser");
         setUser(null);
         setIsAvatarMenuOpen(false);
     };
@@ -157,7 +158,7 @@ export default function ConnectWallet({
             {/* ----------------- Modals ----------------- */}
 
             <CreateUsernameModal
-                open={showUsernameModal}
+                open={Boolean(user && showUsernameModal)}
                 username={username}
                 setUsername={setUsername}
                 onSave={saveUsername}
@@ -173,12 +174,28 @@ export default function ConnectWallet({
                 {/* Connect Button */}
                 {!user && (
                     <button
-                        onClick={connectWallet}
+                        onClick={openWalletConnection}
                         disabled={loading}
                         className="bg-black dark:bg-neutralDark text-white px-4 py-2 rounded-full text-sm font-semibold hover:scale-105 transition-all duration-200"
                     >
                         {loading ? "Connecting..." : "Connect Wallet"}
                     </button>
+                )}
+                {!user && showWallets && (
+                    <ul className="ml-2 rounded-lg border border-primary/30 bg-cardLight p-1 dark:bg-cardDark">
+                        {wallets.map(wallet => (
+                            <li key={wallet.info.uuid}>
+                                <button
+                                    type="button"
+                                    onClick={() => void connectWallet(wallet)}
+                                    disabled={loading}
+                                    className="w-full rounded px-3 py-2 text-left text-sm hover:bg-primary/10"
+                                >
+                                    {wallet.info.name}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
                 )}
 
                 {/* Logged user info */}
