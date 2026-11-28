@@ -34,6 +34,12 @@ const SubmissionSchema = new Schema(
             default: "pending", // pending | approved | rejected
         },
 
+        rejectionTxHash: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+
         hunterWallet: {
             type: String,
             required: true,

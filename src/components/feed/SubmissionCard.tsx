@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import MediaViewer from "./MediaViewer";
+import SubmissionRejectButton from "./SubmissionRejectButton";
 import { useUser } from "@/context/UserContext";
 import axios from "axios";
 import { ethers } from "ethers";
@@ -172,18 +173,22 @@ shadow-md
                         </button>
                     </div>
 
-                    {/* Creator Approve */}
                     {isCreator && isPending && bounty.status === "open" && (
-                        <button
-                            onClick={() => setConfirmOpen(true)}
-                            className="
-                                bg-primary text-white text-[10px]
-                                px-3 py-1 rounded-md
-                                hover:bg-primary/80 transition
-                            "
-                        >
-                            Approve
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <SubmissionRejectButton
+                                submissionId={submission._id}
+                                onChainId={bounty.onChainId}
+                                hunterWallet={submission.hunterWallet}
+                                onRejected={onApproved}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setConfirmOpen(true)}
+                                className="rounded-md bg-primary px-3 py-1 text-[10px] font-bold text-white transition hover:bg-primary/80"
+                            >
+                                Approve
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

@@ -27,7 +27,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [x] Reject other pending submissions on the same bounty when one is approved. The database transaction closes the bounty and updates the submissions together. Verified with mocked rollback, retry, and scope checks.
 - [x] Show “Not selected” in `SubmissionCard.tsx` for rejected proof. Verified rendering for rejected, approved, and pending submissions.
 - [x] Support multiple injected wallets and clear stale sessions when the active account changes. A Chrome test with injected wallet doubles verified selection, restoring the selected provider, account changes, disconnect, and the legacy fallback.
-- [ ] Add a reject button wired to the contract's `reject()` and a new `/api/submission/reject` route.
+- [x] Add a creator reject button and `/api/submission/reject`. A local escrow test verified that rejection keeps the bounty open and funds locked, and that the confirmed receipt can retry sync without another transaction.
 
 ### 1.3 Data model additions
 - [ ] Add a `deadline` date to the bounty model and persist it in the create API. Expand the bounty status enum to `open | completed | expired | refunded`.
