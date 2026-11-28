@@ -117,6 +117,9 @@ export default function BountyFeed() {
                     />
 
                     {/* Submissions */}
+                    {submissionsMap[bounty._id]?.length === 0 && (
+                        <p className="pl-4 text-sm text-textMainLight dark:text-textMainDark">No proof submitted yet</p>
+                    )}
                     {submissionsMap[bounty._id]?.map((sub: any) => (
                         <SubmissionCard
                             key={sub._id}

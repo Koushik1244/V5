@@ -10,7 +10,8 @@ export default function BountyMap() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<mapboxgl.Marker[]>([]);
-    const [bounties, setBounties] = useState<any[]>([]);
+    const [bounties, setBounties] = useState<any[] | null>(null);
+    const [areaEmpty, setAreaEmpty] = useState(false);
 
     // Fetch bounties
     useEffect(() => {
@@ -38,21 +39,26 @@ export default function BountyMap() {
         });
 
         mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+        const map = mapRef.current;
+        return () => {
+            map.remove();
+            mapRef.current = null;
+        };
     }, []);
 
     // Add markers
     useEffect(() => {
-        if (!mapRef.current) return;
+        const map = mapRef.current;
+        if (!map || !bounties) return;
 
-        // Remove old markers
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
+        const openLocations: [number, number][] = [];
 
         bounties.forEach((bounty) => {
             const lat = bounty.location?.lat;
             const lng = bounty.location?.lng;
 
-            if (!lat || !lng) return;
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            if (bounty.status === "open") openLocations.push([lng, lat]);
 
             // Marker element (purple glow)
             const el = document.createElement("div");
@@ -96,16 +102,31 @@ export default function BountyMap() {
             const marker = new mapboxgl.Marker(el)
                 .setLngLat([lng, lat])
                 .setPopup(popup)
-                .addTo(mapRef.current!);
+                .addTo(map);
 
             markersRef.current.push(marker);
         });
+        const checkArea = () => {
+            const bounds = map.getBounds();
+            if (bounds) setAreaEmpty(!openLocations.some(location => bounds.contains(location)));
+        };
+        checkArea();
+        map.on("moveend", checkArea);
+        return () => {
+            map.off("moveend", checkArea);
+            markersRef.current.forEach(marker => marker.remove());
+            markersRef.current = [];
+        };
     }, [bounties]);
 
     return (
-        <div
-            ref={mapContainer}
-            className="w-full h-[75vh]"
-        />
+        <div className="relative">
+            <div ref={mapContainer} className="w-full h-[75vh]" />
+            {areaEmpty && (
+                <p role="status" className="pointer-events-none absolute bottom-8 left-4 right-4 mx-auto w-fit rounded-lg bg-cardLight px-4 py-2 text-sm shadow dark:bg-cardDark">
+                    No open bounties in this area. Pan or zoom out to explore.
+                </p>
+            )}
+        </div>
     );
 }

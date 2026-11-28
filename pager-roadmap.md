@@ -60,7 +60,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 ### 2.2 Onboarding flow
 - [x] Prompt for a username on first wallet connection when the user has none.
 - [ ] Verify first-time wallet onboarding in a browser with a wallet extension.
-- [ ] **Partial.** Add empty states for no nearby bounties, no submissions, and no profile activity. The feed has a generic “No bounties yet” message, and the profile has a “No bounties created yet” message.
+- [x] Show empty states for no open bounties in the current map area, no proof on a bounty, and no activity on a profile. Verified all three in Chrome.
 - [ ] Replace raw `alert()` network-switch messaging with a proper toast or modal.
 
 ### 2.3 Core UX flows to smooth out

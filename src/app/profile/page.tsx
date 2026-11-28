@@ -14,6 +14,7 @@ export default function ProfilePage() {
     const [createdBounties, setCreatedBounties] = useState<any[]>([]);
     const [participatedCount, setParticipatedCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [activityLoaded, setActivityLoaded] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -21,6 +22,7 @@ export default function ProfilePage() {
         const fetchData = async () => {
             try {
                 setLoading(true);
+                setActivityLoaded(false);
 
                 // Fetch all bounties
                 const bountyRes = await axios.get("/api/bounty/all");
@@ -52,6 +54,7 @@ export default function ProfilePage() {
                 );
 
                 setParticipatedCount(participation);
+                setActivityLoaded(true);
             } catch (err) {
                 console.error(err);
             }
@@ -157,6 +160,11 @@ export default function ProfilePage() {
 
             {/* Created Bounties */}
             <section>
+                {activityLoaded && createdBounties.length === 0 && participatedCount === 0 && (
+                    <p className="mb-4 rounded-lg border border-primary/20 bg-cardLight p-4 dark:bg-cardDark">
+                        No profile activity yet. Post a bounty or submit proof to get started.
+                    </p>
+                )}
                 <h3 className="text-lg font-bold mb-4 text-textMainLight dark:text-textMainDark">
                     Your Bounties
                 </h3>
