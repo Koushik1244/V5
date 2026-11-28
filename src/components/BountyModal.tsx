@@ -7,8 +7,8 @@ import MapPicker from "./ui/MapPicker";
 import ImageUploader from "./ui/ImageUploader";
 import axios from "axios";
 import { useUser } from "@/context/UserContext";
-import { ethers } from "ethers";
-import { ESCROW_ADDRESS, USDC_ADDRESS, ESCROW_ABI, ERC20_ABI } from "@/lib/contracts";
+import { parseUnits, type Eip1193Provider } from "ethers";
+import { BOUNTY_DURATIONS, DEFAULT_BOUNTY_DURATION, lockBountyFunds } from "@/lib/bountyCreation";
 import { IoImageSharp } from "react-icons/io5";
 
 type Props = {
@@ -24,6 +24,7 @@ export default function BountyModal({ open, onClose }: Props) {
     const { user } = useUser();
     const [description, setDescription] = useState("");
     const [reward, setReward] = useState("");
+    const [duration, setDuration] = useState(DEFAULT_BOUNTY_DURATION);
     const [loading, setLoading] = useState(false);
 
 
@@ -52,6 +53,11 @@ export default function BountyModal({ open, onClose }: Props) {
             return;
         }
 
+        if (!description.trim()) {
+            alert("Enter a bounty description");
+            return;
+        }
+
         if (!lat || !lng) {
             alert("Please select a location");
             return;
@@ -67,36 +73,17 @@ export default function BountyModal({ open, onClose }: Props) {
         try {
             setLoading(true);
 
-            if (!(window as any).ethereum) {
+            const ethereum = (window as Window & { ethereum?: Eip1193Provider }).ethereum;
+            if (!ethereum) {
                 alert("MetaMask not found");
                 return;
             }
 
-            const provider = new ethers.BrowserProvider((window as any).ethereum);
-            const signer = await provider.getSigner();
-
-            // Ensure Monad
-            const network = await provider.getNetwork();
-            if (network.chainId !== 10143n) {
-                await (window as any).ethereum.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: "0x279f" }],
-                });
+            const onChainId = await lockBountyFunds(ethereum, parseUnits(amount.toString(), 6), duration);
+            if (onChainId === null) {
+                alert("Funds were locked, but the bounty ID could not be read. The bounty was not saved.");
+                return;
             }
-
-            const amountInUnits = ethers.parseUnits(amount.toString(), 6);
-
-            // Approve USDC
-            const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
-            const approveTx = await usdc.approve(ESCROW_ADDRESS, amountInUnits);
-            await approveTx.wait();
-
-            // Lock funds
-            const escrow = new ethers.Contract(ESCROW_ADDRESS, ESCROW_ABI, signer);
-            const tx = await escrow.createBounty(amountInUnits);
-            await tx.wait();
-
-            const bountyCount = await escrow.bountyCount();
 
             // Save in Mongo
             await axios.post("/api/bounty/create", {
@@ -106,7 +93,7 @@ export default function BountyModal({ open, onClose }: Props) {
                 lat,
                 lng,
                 mediaUrl: imageUrl,
-                onChainId: Number(bountyCount),
+                onChainId,
             });
 
             alert("Bounty created!");
@@ -114,6 +101,7 @@ export default function BountyModal({ open, onClose }: Props) {
             // Reset
             setDescription("");
             setReward("");
+            setDuration(DEFAULT_BOUNTY_DURATION);
             setImageUrl("");
             setLat(null);
             setLng(null);
@@ -146,7 +134,7 @@ export default function BountyModal({ open, onClose }: Props) {
             {/* Modal */}
             <div
                 className={`
-          relative w-[92%] max-w-lg
+          relative w-[92%] max-w-lg max-h-[90dvh] overflow-y-auto
           rounded-2xl p-6
 
           /* Glass surface */
@@ -218,6 +206,20 @@ export default function BountyModal({ open, onClose }: Props) {
               focus:ring-2 focus:ring-primary/40
             "
                     />
+
+                    <label className="block space-y-1 text-sm font-medium">
+                        <span>Expires after</span>
+                        <select
+                            value={duration}
+                            onChange={(event) => setDuration(Number(event.target.value))}
+                            disabled={loading}
+                            className="w-full p-3 rounded-lg bg-white dark:bg-neutralDark border border-borderLight dark:border-borderDark"
+                        >
+                            {BOUNTY_DURATIONS.map(({ label, seconds }) => (
+                                <option key={seconds} value={seconds}>{label}</option>
+                            ))}
+                        </select>
+                    </label>
 
                     {/* Map Location Picker */}
                     {/* <div className="text-sm text-primary/70 space-y-2"> */}
