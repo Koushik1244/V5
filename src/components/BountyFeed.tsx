@@ -17,6 +17,7 @@ export default function BountyFeed() {
         {}
     );
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
     // Hunter modal
     const [submitBountyId, setSubmitBountyId] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export default function BountyFeed() {
     // Optimized feed loading
     const fetchBounties = async () => {
         setLoading(true);
+        setLoadError("");
 
         try {
             const res = await axios.get("/api/bounty/all");
@@ -41,7 +43,7 @@ export default function BountyFeed() {
             setBounties(bountiesData);
 
             // Fetch all submissions in parallel
-            const results = await Promise.all(
+            const results = await Promise.allSettled(
                 bountiesData.map(async (bounty: any) => {
                     const subs = await fetchSubmissions(bounty._id);
                     return { id: bounty._id, subs };
@@ -50,15 +52,19 @@ export default function BountyFeed() {
 
             const map: Record<string, any[]> = {};
             results.forEach((r) => {
-                map[r.id] = r.subs;
+                if (r.status === "fulfilled") map[r.value.id] = r.value.subs;
             });
 
             setSubmissionsMap(map);
+            if (results.some(result => result.status === "rejected")) {
+                setLoadError("Some proof could not load.");
+            }
         } catch (err) {
             console.error("Feed load failed:", err);
+            setLoadError("Could not load the bounty feed.");
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     if (loading) {
@@ -69,18 +75,21 @@ export default function BountyFeed() {
         );
     }
 
-    if (bounties.length === 0) {
-        return (
-            <p className="text-center mt-6 text-textMainLight dark:text-textMainDark">
-                No bounties yet
-            </p>
-        );
-    }
-
     const previews = bounties.filter(bounty => bounty.status === "open").slice(0, 3);
 
     return (
         <div className="max-w-xl mx-auto mt-6 space-y-6">
+            {loadError && (
+                <div className="rounded-lg border border-red-500/30 bg-cardLight p-4 dark:bg-cardDark">
+                    <p role="alert" className="text-sm">{loadError}</p>
+                    <button type="button" onClick={fetchBounties} className="mt-2 text-sm font-semibold text-[#5938c9] underline dark:text-[#b8a7ff]">
+                        Try again
+                    </button>
+                </div>
+            )}
+            {!loadError && bounties.length === 0 && (
+                <p className="text-center text-textMainLight dark:text-textMainDark">No bounties yet</p>
+            )}
             {previews.length > 0 && (
                 <section aria-labelledby="open-bounty-previews">
                     <h2 id="open-bounty-previews" className="mb-3 text-xl font-semibold">Open bounties</h2>
