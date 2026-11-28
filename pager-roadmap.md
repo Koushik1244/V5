@@ -39,7 +39,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [ ] Approve and confirm the hunter receives USDC minus the 2% fee. The contract calculates the fee, and receipt and token transfers still need verification.
 - [ ] Test rejection and expiry/refund end to end once the app paths are wired.
 - [x] Add local PagerEscrow regression coverage for create, approve, reject, and refund. `npx --no-install hardhat test --no-compile test/PagerEscrow.js` passes six tests against contracts compiled from source. The old starter `Lock` suite still requires its missing artifact.
-- [ ] Test wrong-network handling on create and approve with a wallet extension. Both flows verify the resulting chain, and creation was exercised with a mocked wallet.
+- [ ] **Partial.** Test wrong-network handling on create and approve with a wallet extension. Automated checks cover an already-correct network, switching or adding Monad, a refused switch, and a wallet that stays on the wrong network.
 
 ### 1.5 OPEN INVESTIGATION — approve succeeded but hunter wasn't paid
 - [ ] Diagnose the reported missing payout. The historical transaction hash is needed to check the receipt, any revert, and USDC transfer logs for the intended hunter.

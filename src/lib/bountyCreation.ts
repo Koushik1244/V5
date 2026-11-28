@@ -1,8 +1,8 @@
-import { BrowserProvider, Contract, type Eip1193Provider } from "ethers";
+import { Contract, type Eip1193Provider } from "ethers";
 import { ESCROW_ADDRESS, USDC_ADDRESS, ESCROW_ABI, ERC20_ABI } from "./contracts";
+import { connectMonadWallet } from "./monadWallet";
 
 const HOUR = 60 * 60;
-const MONAD_TESTNET_CHAIN_ID = "0x279f";
 
 export const DEFAULT_BOUNTY_DURATION = 24 * HOUR;
 
@@ -19,39 +19,7 @@ export async function lockBountyFunds(
     duration: number,
     walletAddress: string,
 ) {
-    const switchChain = () => ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: MONAD_TESTNET_CHAIN_ID }],
-    });
-
-    if (await ethereum.request({ method: "eth_chainId" }) !== MONAD_TESTNET_CHAIN_ID) {
-        try {
-            await switchChain();
-        } catch (error) {
-            if (typeof error !== "object" || error === null || !("code" in error) || error.code !== 4902) {
-                throw error;
-            }
-
-            await ethereum.request({
-                method: "wallet_addEthereumChain",
-                params: [{
-                    chainId: MONAD_TESTNET_CHAIN_ID,
-                    chainName: "Monad Testnet",
-                    rpcUrls: ["https://testnet-rpc.monad.xyz"],
-                    nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
-                    blockExplorerUrls: ["https://explorer.monad.xyz"],
-                }],
-            });
-            if (await ethereum.request({ method: "eth_chainId" }) !== MONAD_TESTNET_CHAIN_ID) {
-                await switchChain();
-            }
-        }
-    }
-
-    const provider = new BrowserProvider(ethereum);
-    if ((await provider.getNetwork()).chainId !== BigInt(MONAD_TESTNET_CHAIN_ID)) {
-        throw new Error("Please switch to Monad Testnet");
-    }
+    const provider = await connectMonadWallet(ethereum);
     const signer = await provider.getSigner(walletAddress);
 
     const usdc = new Contract(USDC_ADDRESS, ERC20_ABI, signer);

@@ -9,6 +9,7 @@ import { useUser } from "@/context/UserContext";
 import axios from "axios";
 import { ethers } from "ethers";
 import { ESCROW_ADDRESS, ESCROW_ABI } from "@/lib/contracts";
+import { connectMonadWallet } from "@/lib/monadWallet";
 import { formatTimeAgo } from "@/lib/utils";
 import { FaShare } from "react-icons/fa";
 import { HiChatBubbleLeft } from "react-icons/hi2";
@@ -39,7 +40,7 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
                 return;
             }
 
-            const provider = new ethers.BrowserProvider(walletProvider);
+            const provider = await connectMonadWallet(walletProvider);
             const signer = await provider.getSigner(user.walletAddress);
 
             const escrow = new ethers.Contract(
