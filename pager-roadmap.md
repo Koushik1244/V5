@@ -25,7 +25,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [x] Add a creator refund action and `/api/bounty/refund`. The API verifies the refund receipt before saving the status. A local escrow test confirmed that expiry returns the tokens and a failed database sync can retry without another transaction.
 - [x] Add a network guard to `SubmissionCard.tsx` approval. It verifies the chain ID after switching.
 - [x] Reject other pending submissions on the same bounty when one is approved. The database transaction closes the bounty and updates the submissions together. Verified with mocked rollback, retry, and scope checks.
-- [ ] Add a “Not selected” state in `SubmissionCard.tsx`.
+- [x] Show “Not selected” in `SubmissionCard.tsx` for rejected proof. Verified rendering for rejected, approved, and pending submissions.
 - [ ] Verify wallet connection with multiple injected providers and after account changes. The earlier handoff reported a local workaround involving Phantom and MetaMask. `ConnectWallet.tsx` currently uses `window.ethereum` directly.
 - [ ] Add a reject button wired to the contract's `reject()` and a new `/api/submission/reject` route.
 

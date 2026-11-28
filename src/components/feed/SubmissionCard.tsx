@@ -117,6 +117,11 @@ shadow-md
                             Approved
                         </span>
                     )}
+                    {submission.status === "rejected" && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-textMainLight dark:text-textMainDark">
+                            Not selected
+                        </span>
+                    )}
                 </div>
 
                 {/* Description */}
