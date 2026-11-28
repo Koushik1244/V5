@@ -12,20 +12,26 @@ export default function BountyMap() {
     const markersRef = useRef<mapboxgl.Marker[]>([]);
     const [bounties, setBounties] = useState<any[] | null>(null);
     const [areaEmpty, setAreaEmpty] = useState(false);
+    const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error">("loading");
+    const [loadAttempt, setLoadAttempt] = useState(0);
 
     // Fetch bounties
     useEffect(() => {
+        const controller = new AbortController();
         const fetchBounties = async () => {
             try {
-                const res = await axios.get("/api/bounty/all");
+                const res = await axios.get("/api/bounty/all", { signal: controller.signal });
+                if (controller.signal.aborted) return;
                 setBounties(res.data.bounties);
-            } catch (err) {
-                console.error("Failed to load bounties");
+                setLoadStatus("ready");
+            } catch {
+                if (!controller.signal.aborted) setLoadStatus("error");
             }
         };
 
-        fetchBounties();
-    }, []);
+        void fetchBounties();
+        return () => controller.abort();
+    }, [loadAttempt]);
 
     // Initialize map
     useEffect(() => {
@@ -122,7 +128,27 @@ export default function BountyMap() {
     return (
         <div className="relative">
             <div ref={mapContainer} className="w-full h-[75vh]" />
-            {areaEmpty && (
+            {loadStatus === "loading" && (
+                <p role="status" className="pointer-events-none absolute bottom-8 left-4 right-4 mx-auto w-fit rounded-lg bg-cardLight px-4 py-2 text-sm shadow dark:bg-cardDark">
+                    Loading bounties…
+                </p>
+            )}
+            {loadStatus === "error" && (
+                <div className="absolute bottom-8 left-4 right-4 mx-auto w-fit rounded-lg bg-cardLight px-4 py-2 text-sm shadow dark:bg-cardDark">
+                    <p role="alert">Could not load bounties on the map.</p>
+                    <button
+                        type="button"
+                        className="mt-1 font-semibold text-[#5938c9] underline dark:text-[#b8a7ff]"
+                        onClick={() => {
+                            setLoadStatus("loading");
+                            setLoadAttempt(attempt => attempt + 1);
+                        }}
+                    >
+                        Try again
+                    </button>
+                </div>
+            )}
+            {loadStatus === "ready" && areaEmpty && (
                 <p role="status" className="pointer-events-none absolute bottom-8 left-4 right-4 mx-auto w-fit rounded-lg bg-cardLight px-4 py-2 text-sm shadow dark:bg-cardDark">
                     No open bounties in this area. Pan or zoom out to explore.
                 </p>

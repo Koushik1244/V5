@@ -66,7 +66,7 @@ Goal: someone who has never seen the app can land on it, understand what it is, 
 ### 2.3 Core UX flows to smooth out
 - [x] Show a loading state in the feed.
 - [x] Show feed and partial proof-loading errors with a retry action. Verified both failure paths and recovery in Chrome.
-- [ ] Add map loading and error states. Fetch failures currently go to the console.
+- [x] Add map loading and error states with a retry for bounty data. Verified delayed loading, failure, recovery, and the empty state in Chrome.
 - [ ] Bounty creation form: inline validation instead of alert() popups
 - [ ] **Partial.** Clarify the hunter submission steps. The existing modal collects a description and photo, shows a submitting state, and refreshes the feed on success.
 - [ ] **Partial.** Refine approval feedback. The confirm modal shows “Processing...” and has a sync retry, while success and transaction errors still use alerts.
