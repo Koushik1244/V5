@@ -30,7 +30,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [x] Add a creator reject button and `/api/submission/reject`. A local escrow test verified that rejection keeps the bounty open and funds locked, and that the confirmed receipt can retry sync without another transaction.
 
 ### 1.3 Data model additions
-- [ ] Add a `deadline` date to the bounty model and persist it in the create API. Expand the bounty status enum to `open | completed | expired | refunded`.
+- [x] Store the escrow deadline as a date when creating a bounty and enforce the `open | completed | expired | refunded` enum. Verified persistence and compatibility with legacy records that have no deadline.
 - [ ] **Partial.** Enforce `pending | approved | rejected` in the submission schema. All three values are documented in a comment, and the field currently accepts any string.
 
 ### 1.4 Core flow testing checklist

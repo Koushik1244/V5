@@ -36,7 +36,11 @@ const BountySchema = new Schema(
 
         status: {
             type: String,
-            default: "open", // open | completed
+            enum: ["open", "completed", "expired", "refunded"],
+            default: "open",
+        },
+        deadline: {
+            type: Date,
         },
         onChainId: {
             type: Number,
