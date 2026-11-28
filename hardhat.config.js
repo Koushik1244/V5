@@ -1,12 +1,14 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
+const { MONAD_RPC, PRIVATE_KEY } = process.env;
+
 module.exports = {
   solidity: "0.8.20",
-  networks: {
+  networks: MONAD_RPC && PRIVATE_KEY ? {
     monadTestnet: {
-      url: process.env.MONAD_RPC,
-      accounts: [process.env.PRIVATE_KEY],
+      url: MONAD_RPC,
+      accounts: [PRIVATE_KEY],
     },
-  },
+  } : {},
 };

@@ -38,7 +38,7 @@ Goal: the money/escrow loop and basic app flow are bulletproof before anything e
 - [ ] Submit proof as a different wallet. The form and API exist, and this still needs a wallet test on the current checkout.
 - [ ] Approve and confirm the hunter receives USDC minus the 2% fee. The contract calculates the fee, and receipt and token transfers still need verification.
 - [ ] Test rejection and expiry/refund end to end once the app paths are wired.
-- [ ] Add local PagerEscrow regression coverage for create, approve, reject, and refund. The checked-in escrow artifact still exposes the old one-argument create function. `npx --no-install hardhat test --no-compile` ran only the starter `Lock` suite and reported nine failures because the `Lock` artifact is missing.
+- [x] Add local PagerEscrow regression coverage for create, approve, reject, and refund. `npx --no-install hardhat test --no-compile test/PagerEscrow.js` passes six tests against contracts compiled from source. The old starter `Lock` suite still requires its missing artifact.
 - [ ] Test wrong-network handling on create and approve with a wallet extension. Both flows verify the resulting chain, and creation was exercised with a mocked wallet.
 
 ### 1.5 OPEN INVESTIGATION — approve succeeded but hunter wasn't paid
