@@ -59,6 +59,7 @@ export default function SubmissionCard({ submission, bounty, onApproved }: Props
             await axios.post("/api/submission/approve", {
                 submissionId: submission._id,
                 bountyId: bounty._id,
+                txHash: tx.hash,
             });
 
             setConfirmOpen(false);
