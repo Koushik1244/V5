@@ -77,10 +77,32 @@ export default function BountyFeed() {
         );
     }
 
+    const previews = bounties.filter(bounty => bounty.status === "open").slice(0, 3);
+
     return (
         <div className="max-w-xl mx-auto mt-6 space-y-6">
+            {previews.length > 0 && (
+                <section aria-labelledby="open-bounty-previews">
+                    <h2 id="open-bounty-previews" className="mb-3 text-xl font-semibold">Open bounties</h2>
+                    <ul className="grid list-none gap-3 sm:grid-cols-3">
+                        {previews.map(bounty => (
+                            <li key={bounty._id}>
+                                <a
+                                    href={`#bounty-${bounty._id}`}
+                                    className="block h-full rounded-xl border border-primary/20 bg-cardLight p-4 hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:bg-cardDark"
+                                >
+                                    <p className="line-clamp-2 font-medium">{bounty.description}</p>
+                                    <p className="mt-2 text-sm font-semibold text-[#5938c9] dark:text-[#b8a7ff]">
+                                        {bounty.reward} USDC
+                                    </p>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
             {bounties.map((bounty) => (
-                <div key={bounty._id} className="space-y-3">
+                <div key={bounty._id} id={`bounty-${bounty._id}`} className="scroll-mt-24 space-y-3">
                     {/* Bounty */}
                     <BountyCard
                         bounty={bounty}
